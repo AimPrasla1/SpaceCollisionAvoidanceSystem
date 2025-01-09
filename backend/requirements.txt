@@ -8,3 +8,4 @@ tensorflow
 matplotlib
 joblib
 requests
+satellite-py
