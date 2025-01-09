@@ -1,26 +1,16 @@
 {
     "version": 2,
-    "projects": [
-      {
-        "name": "frontend",
-        "path": "frontend",
-        "buildCommand": "npm run build",
-        "outputDirectory": "frontend/build"
-      },
-      {
-        "name": "backend",
-        "path": "backend",
-        "outputDirectory": "api"
-      }
-    ],
     "builds": [
       {
         "src": "backend/main.py",
         "use": "@vercel/python"
       },
       {
-        "src": "frontend/build/**",
-        "use": "@vercel/static"
+        "src": "frontend/package.json",
+        "use": "@vercel/static-build",
+        "config": {
+          "distDir": "frontend/build"
+        }
       }
     ],
     "routes": [
