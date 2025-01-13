@@ -12,14 +12,12 @@ import {
 import * as satellite from "satellite.js";
 
 const CollisionChart = () => {
-  // State to store satellite data and filtered results
   const [satelliteData, setSatelliteData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(0);
-  const rowsPerPage = 50; // Number of rows per page
+  const rowsPerPage = 50;
 
-  // Fetch satellite data from the TLE API
   const fetchSatelliteData = async () => {
     const tleUrl = "https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle";
 
@@ -35,7 +33,6 @@ const CollisionChart = () => {
       const satellites = [];
       const now = new Date();
 
-      // Parse TLE data and compute satellite positions
       for (let i = 0; i < tleLines.length; i += 3) {
         const name = tleLines[i].trim();
         const tleLine1 = tleLines[i + 1].trim();
@@ -56,7 +53,7 @@ const CollisionChart = () => {
               name,
               lat: (latitude * 180) / Math.PI, // Convert radians to degrees
               lng: (longitude * 180) / Math.PI, // Convert radians to degrees
-              alt: height * 0.62 / 1000, // Convert altitude from km to miles
+              alt: height * 0.621371, // Convert altitude from kilometers to miles
             });
           }
         } catch (error) {
@@ -64,12 +61,10 @@ const CollisionChart = () => {
         }
       }
 
-      // Enrich satellite data with collision risk
       const enrichedSatellites = satellites.map((sat, index) => {
         let closestDistance = Infinity;
         let closestSatellite = null;
 
-        // Calculate distances to other satellites
         satellites.forEach((otherSat, otherIndex) => {
           if (index !== otherIndex) {
             const distance = Math.sqrt(
@@ -87,8 +82,8 @@ const CollisionChart = () => {
 
         return {
           ...sat,
-          collisionRisk: closestDistance < 0.1 ? Math.ceil((0.1 - closestDistance) * 50) : 1, // Compute collision risk
-          closestSatellite: closestDistance < 0.1 ? closestSatellite : null, // Identify the closest satellite
+          collisionRisk: closestDistance < 5 ? Math.ceil((5 - closestDistance) * 10) : 1, // Calculate collision risk
+          closestSatellite: closestDistance < 5 ? closestSatellite : null, // Identify the closest satellite
         };
       });
 
@@ -99,14 +94,12 @@ const CollisionChart = () => {
     }
   };
 
-  // Fetch data on component mount and refresh every 3 seconds
   useEffect(() => {
     fetchSatelliteData();
     const interval = setInterval(fetchSatelliteData, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  // Filter satellite data based on search query
   useEffect(() => {
     const filtered = satelliteData.filter((sat) =>
       sat.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -114,7 +107,6 @@ const CollisionChart = () => {
     setFilteredData(filtered);
   }, [searchQuery, satelliteData]);
 
-  
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -123,7 +115,6 @@ const CollisionChart = () => {
     <div style={{ width: "90%", margin: "0 auto", textAlign: "center" }}>
       <h2 style={{ color: "white" }}>Starlink Satellite Information</h2>
 
-      {/* Search Bar */}
       <TextField
         placeholder="Search Satellites By Number"
         variant="outlined"
@@ -155,7 +146,6 @@ const CollisionChart = () => {
         }}
       />
 
-      {/* Table to Display Satellite Data */}
       <Paper style={{ padding: "20px", backgroundColor: "#333", color: "white" }}>
         <Table>
           <TableHead>
