@@ -5,7 +5,7 @@ Hello, Welcome to my Starlink Satellite Collision Monitoring System. With this s
 Start Frontend
 
 1. cd into frontend folder
-2. npm start
+2. run this: npm start
 
 Start Backend
 
