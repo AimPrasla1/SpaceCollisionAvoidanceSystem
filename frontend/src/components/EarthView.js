@@ -3,12 +3,12 @@ import React, { useEffect, useState, useRef } from "react";
 import Globe from "react-globe.gl";
 import * as satellite from "satellite.js";
 
-const EarthView = ({ onSatelliteDataUpdate }) => {
+const EarthView = () => {
   const globeRef = useRef(null); // Reference to the Globe component
   const [satelliteData, setSatelliteData] = useState([]); // State to hold satellite data
   const [hoveredSatellite, setHoveredSatellite] = useState(null); // State for displaying hovered satellite
 
-  // Fetch TLE (Two-Line Element) data from CelesTrak for Starlink satellites
+  // Fetch TLE data
   const fetchTLEData = async () => {
     const tleUrl = "https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle";
     try {
@@ -30,12 +30,11 @@ const EarthView = ({ onSatelliteDataUpdate }) => {
     }
   };
 
-  // Calculate satellite positions and detect potential collisions
+  // Calculate satellite positions and detect collisions
   const updateSatellitePositionsWithCollisions = (satellites) => {
     const now = new Date();
     const updatedSatellites = satellites
       .map(({ name, tleLine1, tleLine2 }) => {
-        // Use satellite.js to propagate TLE data
         const satrec = satellite.twoline2satrec(tleLine1, tleLine2);
         const positionAndVelocity = satellite.propagate(satrec, now);
 
@@ -49,17 +48,17 @@ const EarthView = ({ onSatelliteDataUpdate }) => {
             name,
             lat: (latitude * 180) / Math.PI, // Convert radians to degrees
             lng: (longitude * 180) / Math.PI, // Convert radians to degrees
-            alt: (height / 1000) * 0.62, // Convert altitude to miles
-            eciPosition: positionAndVelocity.position, // Store ECI coordinates for collision detection
-            collisionRisk: 0, // Default collision risk
+            alt: (height / 1000) * 0.621371, // Convert altitude to miles
+            eciPosition: positionAndVelocity.position, // Store ECI coordinates
             isColliding: false, // Default collision status
+            collidingWith: null, // Default colliding satellite
           };
         }
         return null;
       })
-      .filter((sat) => sat !== null); // Filter out invalid satellites
+      .filter((sat) => sat !== null);
 
-    // Detect collisions by calculating distances between satellites
+    // Detect collisions
     for (let i = 0; i < updatedSatellites.length; i++) {
       for (let j = i + 1; j < updatedSatellites.length; j++) {
         const sat1 = updatedSatellites[i];
@@ -71,15 +70,17 @@ const EarthView = ({ onSatelliteDataUpdate }) => {
           Math.pow(sat2.eciPosition.z - sat1.eciPosition.z, 2)
         ) / 1609.34; // Convert meters to miles
 
-        if (distance <= 5) { // Mark satellites as colliding if distance is 5 miles or less
+        // Check collision condition
+        if (distance <= 5) {
           sat1.isColliding = true;
+          sat1.collidingWith = sat2.name;
           sat2.isColliding = true;
+          sat2.collidingWith = sat1.name;
         }
       }
     }
 
-    setSatelliteData(updatedSatellites); // Update state with calculated data
-    if (onSatelliteDataUpdate) onSatelliteDataUpdate(updatedSatellites);
+    setSatelliteData(updatedSatellites); // Update state
   };
 
   // Fetch and update satellite data every 3 seconds
@@ -96,7 +97,7 @@ const EarthView = ({ onSatelliteDataUpdate }) => {
     };
 
     loadSatellites();
-  }, [onSatelliteDataUpdate]);
+  }, []);
 
   return (
     <div style={{ height: "100vh", backgroundColor: "#000" }}>
@@ -105,12 +106,12 @@ const EarthView = ({ onSatelliteDataUpdate }) => {
         globeImageUrl="https://unpkg.com/three-globe/example/img/earth-day.jpg"
         bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"
         backgroundImageUrl="https://unpkg.com/three-globe/example/img/night-sky.png"
-        pointsData={satelliteData} // Data for globe points
-        pointLat={(d) => d.lat} // Latitude of the satellite
-        pointLng={(d) => d.lng} // Longitude of the satellite
+        pointsData={satelliteData} // Display all satellites
+        pointLat={(d) => d.lat} // Latitude
+        pointLng={(d) => d.lng} // Longitude
         pointAltitude={(d) => d.alt / 10000} // Normalize altitude for visualization
         pointColor={(d) => (d.isColliding ? "rgba(255, 0, 0, 1)" : "rgba(255, 255, 255, 1)")} // Red for colliding satellites
-        pointRadius={0.2} // Point size
+        pointRadius={0.3} // Adjust point size
         showAtmosphere={true}
         atmosphereColor="rgba(173, 216, 230, 0.5)"
         atmosphereAltitude={0.15}

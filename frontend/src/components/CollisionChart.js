@@ -51,8 +51,8 @@ const CollisionChart = () => {
 
             satellites.push({
               name,
-              lat: (latitude * 180) / Math.PI, // Convert radians to degrees
-              lng: (longitude * 180) / Math.PI, // Convert radians to degrees
+              lat: (latitude * 180) / Math.PI,
+              lng: (longitude * 180) / Math.PI,
               alt: height * 0.621371, // Convert altitude from kilometers to miles
             });
           }
@@ -62,7 +62,7 @@ const CollisionChart = () => {
       }
 
       const enrichedSatellites = satellites.map((sat, index) => {
-        let closestDistance = Infinity;
+        let isColliding = false;
         let closestSatellite = null;
 
         satellites.forEach((otherSat, otherIndex) => {
@@ -73,17 +73,17 @@ const CollisionChart = () => {
                 Math.pow(sat.alt - otherSat.alt, 2)
             );
 
-            if (distance < closestDistance) {
-              closestDistance = distance;
-              closestSatellite = otherSat;
+            if (distance < 5) { // If within 5 miles
+              isColliding = true;
+              closestSatellite = otherSat.name;
             }
           }
         });
 
         return {
           ...sat,
-          collisionRisk: closestDistance < 5 ? Math.ceil((5 - closestDistance) * 10) : 1, // Calculate collision risk
-          closestSatellite: closestDistance < 5 ? closestSatellite : null, // Identify the closest satellite
+          collisionRisk: isColliding ? "Yes" : "No", // Binary risk indicator
+          closestSatellite: isColliding ? closestSatellite : null,
         };
       });
 
@@ -167,10 +167,12 @@ const CollisionChart = () => {
                   <TableCell style={{ color: "white" }}>{sat.lat.toFixed(2)}</TableCell>
                   <TableCell style={{ color: "white" }}>{sat.lng.toFixed(2)}</TableCell>
                   <TableCell style={{ color: "white" }}>{sat.alt.toFixed(2)}</TableCell>
-                  <TableCell style={{ color: "white" }}>{sat.collisionRisk}</TableCell>
+                  <TableCell style={{ color: sat.collisionRisk === "Yes" ? "red" : "white" }}>
+                    {sat.collisionRisk}
+                  </TableCell>
                   <TableCell style={{ color: "red" }}>
-                    {sat.collisionRisk >= 3 && sat.closestSatellite
-                      ? sat.closestSatellite.name
+                    {sat.collisionRisk === "Yes" && sat.closestSatellite
+                      ? sat.closestSatellite
                       : "None"}
                   </TableCell>
                 </TableRow>
